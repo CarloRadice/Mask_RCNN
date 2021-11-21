@@ -815,9 +815,13 @@ class DetectionLayer(KE.Layer):
         # Reshape output
         # [batch, num_detections, (y1, x1, y2, x2, class_id, class_score)] in
         # normalized coordinates
+
         return tf.reshape(
             detections_batch,
             [self.config.BATCH_SIZE, self.config.DETECTION_MAX_INSTANCES, 6])
+        # return tf.reshape(
+        #     detections_batch,
+        #     [self.config.IMAGES_PER_GPU, self.config.DETECTION_MAX_INSTANCES, 6])
 
     def compute_output_shape(self, input_shape):
         return (None, self.config.DETECTION_MAX_INSTANCES, 6)
@@ -2307,6 +2311,11 @@ class MaskRCNN():
             augmentation. A source is string that identifies a dataset and is
             defined in the Dataset class.
         """
+        print('-> In train')
+        print('epochs', epochs)
+        print('train_dataset', train_dataset)
+        print('val_dataset', val_dataset)
+
         assert self.mode == "training", "Create model in training mode."
 
         # Pre-defined layer regular expressions
