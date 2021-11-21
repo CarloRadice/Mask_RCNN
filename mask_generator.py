@@ -75,11 +75,15 @@ def mask_generator(model, files, dataset, folder, subfolder):
         masks = r['masks'].copy()
         mask = np.zeros((masks.shape[0], masks.shape[1]))
 
-        for i in range(masks.shape[0]):
-            for j in range(masks.shape[1]):
-                for k in range(masks.shape[2]):
-                    if masks[i, j, k] == True:
-                        mask[i, j] = 255
+        # list of ids we want
+        mask_ids = [1, 2, 3, 4, 6, 8]
+
+        for k in range(masks.shape[2]):
+            if r['class_ids'][k] in mask_ids and r['scores'][k] > 0.98:
+                it = np.nditer(masks[:, :, k], flags=['multi_index'])
+                for x in it:
+                    if x == True:
+                        mask[it.multi_index[0], it.multi_index[1]] = 255
 
         basename = os.path.basename(file).split('.')[0]
         mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
@@ -95,6 +99,8 @@ def mask_generator_gpu(model, files, dataset, folder, subfolder):
     if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder)):
         os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder))
 
+    batch_size = 1
+
     images = []
     file_names = []
     i = 1
@@ -106,31 +112,34 @@ def mask_generator_gpu(model, files, dataset, folder, subfolder):
         images.append(image)
         file_names.append(file)
 
-        if i % 40 == 0 and i != 0:
+        if i % batch_size == 0 and i != 0:
             print(len(images))
-            j = 0
+            idx = 0
             # Run detection
             results = model.detect(images, verbose=1)
 
-            # print('###########################################', results.shape, '###########################################')
-            #
-            # for r in results:
-            #     masks = r['masks'].copy()
-            #     mask = np.zeros((masks.shape[0], masks.shape[1]))
-            #
-            #     for i in range(masks.shape[0]):
-            #         for j in range(masks.shape[1]):
-            #             for k in range(masks.shape[2]):
-            #                 if masks[i, j, k] == True:
-            #                     mask[i, j] = 255
-            #
-            #     basename = os.path.basename(file_names[j]).split('.')[0]
-            #     mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-            #     print(file_names[j])
-            #     print(mask_path)
-            #     cv2.imwrite(mask_path, mask)
+            for r in results:
+                masks = r['masks'].copy()
+                mask = np.zeros((masks.shape[0], masks.shape[1]))
 
-            #     j += 1
+                # list of ids we want
+                mask_ids = [1, 2, 3, 4, 6, 8]
+
+                for i in range(masks.shape[0]):
+                    for j in range(masks.shape[1]):
+                        for k in range(masks.shape[2]):
+                            # we want to be sure the mask is correct
+                            if r['class_ids'][k] in mask_ids:
+                                if (masks[i, j, k] == True) and (r['scores'][k] > 0.96):
+                                    mask[i, j] = 255
+
+                basename = os.path.basename(file_names[idx]).split('.')[0]
+                mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
+                print(file_names[idx])
+                print(mask_path)
+                cv2.imwrite(mask_path, mask)
+
+                idx += 1
 
             images = []
             file_names = []
@@ -208,7 +217,7 @@ def main(args):
         mask_generator(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
         mask_generator(model=model, files=right_files, dataset=dataset, folder=folder, subfolder='right')
 
-        # mask_generator_gpu(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
+        #mask_generator_gpu(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
 
 if __name__ == '__main__':
     args = parse_args()
