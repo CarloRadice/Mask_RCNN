@@ -1,58 +1,58 @@
 # Data files and directories common in repo root
-datasets/
-logs/
-*.h5
-results/
-temp/
-test/
+Mask_RCNN/datasets/
+Mask_RCNN/logs/
+Mask_RCNN/*.h5
+Mask_RCNN/results/
+Mask_RCNN/temp/
+Mask_RCNN/test/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+Mask_RCNN/__pycache__/
+Mask_RCNN/*.py[cod]
+Mask_RCNN/*$py.class
 
 # Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+Mask_RCNN/.Python
+Mask_RCNN/env/
+Mask_RCNN/build/
+Mask_RCNN/develop-eggs/
+Mask_RCNN/dist/
+Mask_RCNN/downloads/
+Mask_RCNN/eggs/
+Mask_RCNN/.eggs/
+Mask_RCNN/lib/
+Mask_RCNN/lib64/
+Mask_RCNN/parts/
+Mask_RCNN/sdist/
+Mask_RCNN/var/
+Mask_RCNN/wheels/
+Mask_RCNN/*.egg-info/
+Mask_RCNN/.installed.cfg
+Mask_RCNN/*.egg
 
 # Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+Mask_RCNN/pip-log.txt
+Mask_RCNN/pip-delete-this-directory.txt
 
 # VS Studio Code
-.vscode
+Mask_RCNN/.vscode
 
 # PyCharm
-.idea/
+Mask_RCNN/.idea/
 
 # Dropbox
-.dropbox.attr
+Mask_RCNN/.dropbox.attr
 
 # Jupyter Notebook
-.ipynb_checkpoints
+Mask_RCNN/.ipynb_checkpoints
 
 # pyenv
-.python-version
+Mask_RCNN/.python-version
 
 # dotenv
-.env
+Mask_RCNN/.env
 
 # virtualenv
-.venv
-venv/
-ENV/
+Mask_RCNN/.venv
+Mask_RCNN/venv/
+Mask_RCNN/ENV/
