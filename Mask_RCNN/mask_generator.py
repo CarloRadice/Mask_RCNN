@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import argparse
 import cv2
 import glob
+# run time
+import timeit
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
@@ -58,18 +60,22 @@ class InferenceConfig(coco.CocoConfig):
 
 
 def mask_generator(model, files, dataset, folder, subfolder):
+    # start timer
+    start = timeit.default_timer()
+    
     print('-> Processing', folder)
     if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks')):
         os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks'))
     if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder)):
         os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder))
 
+    count = 0
     for file in files:
         image = cv2.imread(file)
         image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
 
-        # Run detection
-        results = model.detect([image], verbose=1)
+        # Run detection, verbose 0 no print on screen
+        results = model.detect([image], verbose=0)
 
         r = results[0]
         masks = r['masks'].copy()
@@ -87,64 +93,21 @@ def mask_generator(model, files, dataset, folder, subfolder):
 
         basename = os.path.basename(file).split('.')[0]
         mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-        print(file)
-        print(mask_path)
         cv2.imwrite(mask_path, mask)
+        
+        if (count % 1000 == 0) and (count != 0):
+            print('->', count, 'Done')
+            # segment run time
+            stop = timeit.default_timer()
+            seg_run_time = int(stop - start)
+            print('-> Segment run time', seg_run_time, 'seconds;', float('{0:.2f}'.format(seg_run_time/3600)), 'hours')
+            
+        count += 1
 
-
-def mask_generator_gpu(model, files, dataset, folder, subfolder):
-    print('-> Processing', folder)
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks')):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks'))
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder)):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder))
-
-    batch_size = 1
-
-    images = []
-    file_names = []
-    i = 1
-    for file in files:
-
-        image = cv2.imread(file)
-        image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
-
-        images.append(image)
-        file_names.append(file)
-
-        if i % batch_size == 0 and i != 0:
-            print(len(images))
-            idx = 0
-            # Run detection
-            results = model.detect(images, verbose=1)
-
-            for r in results:
-                masks = r['masks'].copy()
-                mask = np.zeros((masks.shape[0], masks.shape[1]))
-
-                # list of ids we want
-                mask_ids = [1, 2, 3, 4, 6, 8]
-
-                for i in range(masks.shape[0]):
-                    for j in range(masks.shape[1]):
-                        for k in range(masks.shape[2]):
-                            # we want to be sure the mask is correct
-                            if r['class_ids'][k] in mask_ids:
-                                if (masks[i, j, k] == True) and (r['scores'][k] > 0.96):
-                                    mask[i, j] = 255
-
-                basename = os.path.basename(file_names[idx]).split('.')[0]
-                mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-                print(file_names[idx])
-                print(mask_path)
-                cv2.imwrite(mask_path, mask)
-
-                idx += 1
-
-            images = []
-            file_names = []
-
-        i += 1
+    # partial run time
+    stop = timeit.default_timer()
+    partial_run_time = int(stop - start)
+    print('-> Partial run time', partial_run_time, 'seconds;', float('{0:.2f}'.format(partial_run_time/3600)), 'hours')
 
 
 def main(args):
@@ -217,8 +180,17 @@ def main(args):
         mask_generator(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
         mask_generator(model=model, files=right_files, dataset=dataset, folder=folder, subfolder='right')
 
-        #mask_generator_gpu(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
 
 if __name__ == '__main__':
+    # start timer
+    start = timeit.default_timer()
+
     args = parse_args()
     main(args)
+
+    # stop timer
+    stop = timeit.default_timer()
+
+    # total run time
+    total_run_time = int(stop - start)
+    print('-> Total run time', total_run_time, 'seconds;', float('{0:.2f}'.format(total_run_time/3600)), 'hours')
