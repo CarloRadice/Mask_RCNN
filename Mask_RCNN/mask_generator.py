@@ -98,8 +98,9 @@ def mask_generator(model, files, dataset, folder, subfolder):
         if (count % 1000 == 0) and (count != 0):
             print('->', count, 'Done')
             # segment run time
+            start_seg = timeit.default_timer()
             stop = timeit.default_timer()
-            seg_run_time = int(stop - start)
+            seg_run_time = int(stop - start_seg)
             print('-> Segment run time', seg_run_time, 'seconds;', float('{0:.2f}'.format(seg_run_time/3600)), 'hours')
             
         count += 1
