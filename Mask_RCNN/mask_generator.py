@@ -11,6 +11,8 @@ import cv2
 import glob
 # run time
 import timeit
+# time format
+import time
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
@@ -62,6 +64,7 @@ class InferenceConfig(coco.CocoConfig):
 def mask_generator(model, files, dataset, folder, subfolder):
     # start timer
     start = timeit.default_timer()
+    current_seg = start
     
     print('-> Processing', folder)
     if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks')):
@@ -98,17 +101,17 @@ def mask_generator(model, files, dataset, folder, subfolder):
         if (count % 1000 == 0) and (count != 0):
             print('->', count, 'Done')
             # segment run time
-            start_seg = timeit.default_timer()
-            stop = timeit.default_timer()
-            seg_run_time = int(stop - start_seg)
-            print('-> Segment run time', seg_run_time, 'seconds;', float('{0:.2f}'.format(seg_run_time/3600)), 'hours')
-            
+            stop_seg = timeit.default_timer()
+            seg_run_time = int(stop_seg - current_seg)
+            print('-> Segment run time:', time.strftime('%H:%M:%S', time.gmtime(seg_run_time)))
+            current_seg += seg_run_time
+
         count += 1
 
     # partial run time
     stop = timeit.default_timer()
     partial_run_time = int(stop - start)
-    print('-> Partial run time', partial_run_time, 'seconds;', float('{0:.2f}'.format(partial_run_time/3600)), 'hours')
+    print('-> Partial run time:', time.strftime('%H:%M:%S', time.gmtime(partial_run_time)))
 
 
 def main(args):
@@ -194,4 +197,4 @@ if __name__ == '__main__':
 
     # total run time
     total_run_time = int(stop - start)
-    print('-> Total run time', total_run_time, 'seconds;', float('{0:.2f}'.format(total_run_time/3600)), 'hours')
+    print('-> Total run time:', time.strftime('%H:%M:%S', time.gmtime(total_run_time)))
