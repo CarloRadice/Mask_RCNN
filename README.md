@@ -32,6 +32,6 @@ python Mask_RCNN/mask_generator.py --folder --dataset
 
 ### Oxford
 - crop immagini: [0, 360, 1280, 730]
-
+- uso solo frames della camera di sinistra
 
 ### Kitti
