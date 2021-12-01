@@ -9,12 +9,16 @@ import matplotlib.pyplot as plt
 import argparse
 import cv2
 import glob
+# run time
+import timeit
+# time format
+import time
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
 
-INPUT_DIR = '/media/RAIDONE/radice'
-OUTPUT_DIR = '/media/RAIDONE/radice/STRUCT2DEPTH'
+INPUT_DIR = '/media/RAIDONE/radice/datasets/'
+OUTPUT_DIR = '/media/RAIDONE/radice/datasets/'
 CROP_AREA = [0, 360, 1280, 730]
 
 # Import Mask RCNN
@@ -41,7 +45,7 @@ def parse_args():
                         required=True)
     parser.add_argument('--dataset', type=str,
                         help='dataset',
-                        choices=['OXFORD'])
+                        choices=['oxford'])
     return parser.parse_args()
 
 # Configurations
@@ -58,18 +62,25 @@ class InferenceConfig(coco.CocoConfig):
 
 
 def mask_generator(model, files, dataset, folder, subfolder):
-    print('-> Processing', folder)
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks')):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks'))
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder)):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder))
+    # start timer
+    start = timeit.default_timer()
+    current_seg = start
 
+    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks')):
+        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks'))
+    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder)):
+        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder))
+
+    print('-> Processing', subfolder, 'camera frames')
+    print('-> Save path', os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder))
+
+    count = 0
     for file in files:
         image = cv2.imread(file)
         image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
 
-        # Run detection
-        results = model.detect([image], verbose=1)
+        # Run detection, verbose 0 no print on screen
+        results = model.detect([image], verbose=0)
 
         r = results[0]
         masks = r['masks'].copy()
@@ -86,65 +97,23 @@ def mask_generator(model, files, dataset, folder, subfolder):
                         mask[it.multi_index[0], it.multi_index[1]] = 255
 
         basename = os.path.basename(file).split('.')[0]
-        mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-        print(file)
-        print(mask_path)
+        mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
         cv2.imwrite(mask_path, mask)
+        
+        if (count % 1000 == 0) and (count != 0):
+            print('->', count, 'Done')
+            # segment run time
+            stop_seg = timeit.default_timer()
+            seg_run_time = int(stop_seg - current_seg)
+            print('-> Segment run time:', time.strftime('%H:%M:%S', time.gmtime(seg_run_time)))
+            current_seg += seg_run_time
 
+        count += 1
 
-def mask_generator_gpu(model, files, dataset, folder, subfolder):
-    print('-> Processing', folder)
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks')):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks'))
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder)):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder))
-
-    batch_size = 1
-
-    images = []
-    file_names = []
-    i = 1
-    for file in files:
-
-        image = cv2.imread(file)
-        image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
-
-        images.append(image)
-        file_names.append(file)
-
-        if i % batch_size == 0 and i != 0:
-            print(len(images))
-            idx = 0
-            # Run detection
-            results = model.detect(images, verbose=1)
-
-            for r in results:
-                masks = r['masks'].copy()
-                mask = np.zeros((masks.shape[0], masks.shape[1]))
-
-                # list of ids we want
-                mask_ids = [1, 2, 3, 4, 6, 8]
-
-                for i in range(masks.shape[0]):
-                    for j in range(masks.shape[1]):
-                        for k in range(masks.shape[2]):
-                            # we want to be sure the mask is correct
-                            if r['class_ids'][k] in mask_ids:
-                                if (masks[i, j, k] == True) and (r['scores'][k] > 0.96):
-                                    mask[i, j] = 255
-
-                basename = os.path.basename(file_names[idx]).split('.')[0]
-                mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-                print(file_names[idx])
-                print(mask_path)
-                cv2.imwrite(mask_path, mask)
-
-                idx += 1
-
-            images = []
-            file_names = []
-
-        i += 1
+    # partial run time
+    stop = timeit.default_timer()
+    partial_run_time = int(stop - start)
+    print('-> Partial run time:', time.strftime('%H:%M:%S', time.gmtime(partial_run_time)))
 
 
 def main(args):
@@ -204,21 +173,30 @@ def main(args):
                    'bus', 'truck']
 
     # Directory of images to run detection on
-    if dataset == 'OXFORD':
-        left_path = os.path.join(INPUT_DIR, dataset, folder, 'processed', 'stereo', 'left')
-        right_path = os.path.join(INPUT_DIR, dataset, folder, 'processed', 'stereo', 'right')
+    if dataset == 'oxford':
+        left_path = os.path.join(INPUT_DIR, dataset, folder, 'stereo', 'left')
+        # right_path = os.path.join(INPUT_DIR, dataset, folder, 'stereo', 'right')
 
-        left_files = glob.glob(left_path + '/*.jpg')
-        right_files = glob.glob(right_path + '/*.jpg')
+        left_files = glob.glob(left_path + '/*.png')
+        # right_files = glob.glob(right_path + '/*.png')
 
         left_files = sorted(left_files)
-        right_files = sorted(right_files)
+        # right_files = sorted(right_files)
 
         mask_generator(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
-        mask_generator(model=model, files=right_files, dataset=dataset, folder=folder, subfolder='right')
+        # mask_generator(model=model, files=right_files, dataset=dataset, folder=folder, subfolder='right')
 
-        #mask_generator_gpu(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
 
 if __name__ == '__main__':
+    # start timer
+    start = timeit.default_timer()
+
     args = parse_args()
     main(args)
+
+    # stop timer
+    stop = timeit.default_timer()
+
+    # total run time
+    total_run_time = int(stop - start)
+    print('-> Total run time:', time.strftime('%H:%M:%S', time.gmtime(total_run_time)))
