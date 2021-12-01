@@ -30,6 +30,11 @@ Generazione delle maschere per il dataset di training.
 python Mask_RCNN/mask_generator.py --folder --dataset
 ```
 
+Lo score che misura l'accuracy delle classi deve essere almeno 0.98 per avere la 
+certezza che quell'oggetto appartenga alla classe corretta.
+
+Di conseguenza, alcuni oggetti potrebbero non essere rappresentati nella maschera.
+
 ### Oxford
 - crop immagini: [0, 360, 1280, 730]
 - uso solo frames della camera di sinistra
