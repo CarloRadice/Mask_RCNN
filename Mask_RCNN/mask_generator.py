@@ -17,8 +17,7 @@ import time
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
 
-INPUT_DIR = '/media/RAIDONE/radice/datasets/'
-OUTPUT_DIR = '/media/RAIDONE/radice/datasets/'
+DIR = '/media/RAIDONE/radice/datasets/'
 CROP_AREA = [0, 360, 1280, 730]
 
 # Import Mask RCNN
@@ -66,13 +65,13 @@ def mask_generator(model, files, dataset, folder, subfolder):
     start = timeit.default_timer()
     current_seg = start
 
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks')):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks'))
-    if not os.path.isdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder)):
-        os.mkdir(os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder))
+    if not os.path.isdir(os.path.join(DIR, dataset, folder, 'rcnn-masks')):
+        os.mkdir(os.path.join(DIR, dataset, folder, 'rcnn-masks'))
+    if not os.path.isdir(os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder)):
+        os.mkdir(os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder))
 
     print('-> Processing', subfolder, 'camera frames')
-    print('-> Save path', os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder))
+    print('-> Save path', os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder))
 
     count = 0
     for file in files:
@@ -86,18 +85,28 @@ def mask_generator(model, files, dataset, folder, subfolder):
         masks = r['masks'].copy()
         mask = np.zeros((masks.shape[0], masks.shape[1]))
 
+        # CASO DOVE PRENDO SOLO GLI ID CHE VOGLIO
         # list of ids we want
-        mask_ids = [1, 2, 3, 4, 6, 8]
+        # mask_ids = [1, 2, 3, 4, 6, 8]
+        #
+        # for k in range(masks.shape[2]):
+        #     if r['class_ids'][k] in mask_ids and r['scores'][k] > 0.98:
+        #         it = np.nditer(masks[:, :, k], flags=['multi_index'])
+        #         for x in it:
+        #             if x == True:
+        #                 mask[it.multi_index[0], it.multi_index[1]] = 255
 
+        # CASO DOVE PRENDO TUTTI GLI ID
         for k in range(masks.shape[2]):
-            if r['class_ids'][k] in mask_ids and r['scores'][k] > 0.98:
+            if r['scores'][k] > 0.90:
                 it = np.nditer(masks[:, :, k], flags=['multi_index'])
                 for x in it:
                     if x == True:
                         mask[it.multi_index[0], it.multi_index[1]] = 255
 
+
         basename = os.path.basename(file).split('.')[0]
-        mask_path = os.path.join(OUTPUT_DIR, dataset, folder, 'rcnn-masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
+        mask_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
         cv2.imwrite(mask_path, mask)
         
         if (count % 1000 == 0) and (count != 0):
@@ -169,13 +178,10 @@ def main(args):
     #                'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
     #                'teddy bear', 'hair drier', 'toothbrush']
 
-    class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle',
-                   'bus', 'truck']
-
     # Directory of images to run detection on
     if dataset == 'oxford':
-        left_path = os.path.join(INPUT_DIR, dataset, folder, 'stereo', 'left')
-        # right_path = os.path.join(INPUT_DIR, dataset, folder, 'stereo', 'right')
+        left_path = os.path.join(DIR, dataset, folder, 'stereo', 'left')
+        # right_path = os.path.join(DIR, dataset, folder, 'stereo', 'right')
 
         left_files = glob.glob(left_path + '/*.png')
         # right_files = glob.glob(right_path + '/*.png')
