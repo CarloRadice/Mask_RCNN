@@ -118,10 +118,9 @@ def mask_generator(model, files, dataset, folder, subfolder):
                 dict['masks'] = np.delete(r['masks'], k, axis=2)
 
         basename = os.path.basename(file).split('.')[0]
-        os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}.pkl'.format(basename))
-        with open('/home/carlo/Documents/datasets/0000001000.pkl', 'wb') as handle:
+        dict_save_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}.pkl'.format(basename))
+        with open(dict_save_path, 'wb') as handle:
             pickle.dump(dict, handle)
-
 
         if (count % 1000 == 0) and (count != 0):
             print('->', count, 'Done')
