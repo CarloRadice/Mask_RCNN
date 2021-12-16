@@ -57,6 +57,6 @@ Mask_RCNN/.venv
 Mask_RCNN/venv/
 Mask_RCNN/ENV/
 
-
 Mask_RCNN/mrcnn/__pycache__/
 Mask_RCNN/samples/coco/__pycache__/
+Mask_RCNN/samples/.ipynb_checkpoints/
