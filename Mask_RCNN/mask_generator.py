@@ -13,7 +13,6 @@ import glob
 import timeit
 # time format
 import time
-import pickle
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
@@ -83,44 +82,21 @@ def mask_generator(model, files, dataset, folder, subfolder):
         results = model.detect([image], verbose=0)
 
         r = results[0]
-        # masks = r['masks'].copy()
-        # mask = np.zeros((masks.shape[0], masks.shape[1]))
 
-        # CASO DOVE PRENDO SOLO GLI ID CHE VOGLIO
-        # list of ids we want
-        # mask_ids = [1, 2, 3, 4, 6, 8]
-        #
-        # for k in range(masks.shape[2]):
-        #     if r['class_ids'][k] in mask_ids and r['scores'][k] > 0.98:
-        #         it = np.nditer(masks[:, :, k], flags=['multi_index'])
-        #         for x in it:
-        #             if x == True:
-        #                 mask[it.multi_index[0], it.multi_index[1]] = 255
-
-        # CASO DOVE PRENDO TUTTI GLI ID
-        # for k in range(masks.shape[2]):
-        #     if r['scores'][k] > 0.90:
-        #         it = np.nditer(masks[:, :, k], flags=['multi_index'])
-        #         for x in it:
-        #             if x == True:
-        #                 mask[it.multi_index[0], it.multi_index[1]] = 255
-
-        #     mask_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}{}.{}'.format(basename, '-fseg', 'png'))
-        #     cv2.imwrite(mask_path, mask)
-
-        # Salvo in un file .pkl l'output della rete neurale con score > 80
+        # Creazione dizionario maschera
+        # Ad ogni cella viene associato il valore di score se presente
         dict = {}
-        for k in range(len(r['scores'])):
-            if r['scores'][k] < 0.80:
-                dict['rois'] = np.delete(r['rois'], k, axis=0)
-                dict['scores'] = np.delete(r['scores'], k)
-                dict['class_ids'] = np.delete(r['class_ids'], k)
-                dict['masks'] = np.delete(r['masks'], k, axis=2)
+        dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
+        for i in range(r['masks'].shape[0]):
+            for j in range(r['masks'].shape[1]):
+                for k in range(r['masks'].shape[2]):
+                    if r['masks'][i, j, k] == True:
+                        dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
 
+        # Salvo il dizionario con compressione
         basename = os.path.basename(file).split('.')[0]
-        dict_save_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}.pkl'.format(basename))
-        with open(dict_save_path, 'wb') as handle:
-            pickle.dump(dict, handle)
+        dict_save_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}'.format(basename))
+        np.savez_compressed(dict_save_path, dict)
 
         if (count % 1000 == 0) and (count != 0):
             print('->', count, 'Done')
