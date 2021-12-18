@@ -124,6 +124,8 @@ def main():
             if not os.path.exists(half_path):
                 os.mkdir(half_path)
 
+            start_seq = timeit.default_timer()
+
             for subfolder in ['image_02/data', 'image_03/data']:
                 full_path = os.path.join(half_path, subfolder.replace('/data', ''))
                 if not os.path.exists(full_path):
@@ -137,6 +139,11 @@ def main():
                 files = sorted(files)
 
                 mask_generator(model=model, files=files, save_path=full_path)
+
+            stop_seq = timeit.default_timer()
+            # sequence run tume
+            seq_run_time = int(stop_seq - start_seq)
+            print('-> Total run time:', time.strftime('%H:%M:%S', time.gmtime(seq_run_time)))
 
 
 if __name__ == '__main__':
