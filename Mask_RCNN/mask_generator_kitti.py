@@ -114,7 +114,7 @@ def main():
         date = d.split('/')[-2]
 
         if not os.path.exists(os.path.join(OUTPUT_DIR, date)):
-            os.mkdir(os.path.join(OUTPUT_DIR, date))
+            os.makedirs(os.path.join(OUTPUT_DIR, date))
 
         for d2 in glob.glob(d + '*/'):
             seqname = d2.split('/')[-2]
@@ -125,8 +125,6 @@ def main():
                 os.mkdir(half_path)
 
             for subfolder in ['image_02/data', 'image_03/data']:
-                ct = 1
-
                 full_path = os.path.join(half_path, subfolder.replace('/data', ''))
                 if not os.path.exists(full_path):
                     os.mkdir(full_path)
