@@ -46,25 +46,29 @@ def mask_generator(model, files, save_path):
     for file in files:
         image = cv2.imread(file)
 
-        # Run detection, verbose 0 no print on screen
-        results = model.detect([image], verbose=0)
-
-        r = results[0]
-
-        # Creazione dizionario maschera
-        # Ad ogni cella viene associato il valore di score se presente
-        dict = {}
-        dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
-        for i in range(r['masks'].shape[0]):
-            for j in range(r['masks'].shape[1]):
-                for k in range(r['masks'].shape[2]):
-                    if r['masks'][i, j, k] == True:
-                        dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
-
-        # Salvo il dizionario con compressione
         basename = os.path.basename(file).split('.')[0]
         dict_save_path = os.path.join(save_path, '{}'.format(basename))
-        np.savez_compressed(dict_save_path, dict)
+
+        # Controllo che il file .npz non sia già presente
+        # Evito di ricreare files che sono identici
+        if not(os.path.isfile(dict_save_path)):
+            # Run detection, verbose 0 no print on screen
+            results = model.detect([image], verbose=0)
+
+            r = results[0]
+
+            # Creazione dizionario maschera
+            # Ad ogni cella viene associato il valore di score se presente
+            dict = {}
+            dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
+            for i in range(r['masks'].shape[0]):
+                for j in range(r['masks'].shape[1]):
+                    for k in range(r['masks'].shape[2]):
+                        if r['masks'][i, j, k] == True:
+                            dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
+
+            # Salvo il dizionario con compressione
+            np.savez_compressed(dict_save_path, dict)
 
 
 def main():
