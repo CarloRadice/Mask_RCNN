@@ -3,6 +3,7 @@
 ## INSTALLAZIONE
  
 ### Requirements 
+
 Conda env:
 - python=3.6
 - jupyter-lab   (non su server)    conda install -c conda-forge jupyterlab
@@ -19,24 +20,29 @@ With pip:
 - h5py==2.10.0
 
 ### Setup
+
 ```shell
 python setup.py install
 ```
 
 ## Training Dataset Generator
+
 Generazione delle maschere per il dataset di training.
+
+Salvo il dizionario contenente le maschere come file compresso .npz per poi poterlo usare per creare 
+le maschere con la soglia di score che preferisco.
+
+### Oxford
+
+- crop immagini: [0, 360, 1280, 730]
+- uso solo frames della camera di sinistra
 
 ```shell
 python Mask_RCNN/mask_generator.py --folder --dataset
 ```
 
-Lo score che misura l'accuracy delle classi deve essere almeno 0.98 per avere la 
-certezza che quell'oggetto appartenga alla classe corretta.
-
-Di conseguenza, alcuni oggetti potrebbero non essere rappresentati nella maschera.
-
-### Oxford
-- crop immagini: [0, 360, 1280, 730]
-- uso solo frames della camera di sinistra
-
 ### Kitti
+
+```shell
+python Mask_RCNN/mask_generator_kitti.py
+```
