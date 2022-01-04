@@ -149,7 +149,7 @@ def main():
             stop_seq = timeit.default_timer()
             # sequence run tume
             seq_run_time = int(stop_seq - start_seq)
-            print('-> Total run time:', time.strftime('%H:%M:%S', time.gmtime(seq_run_time)))
+            print('-> Sequence run time:', time.strftime('%H:%M:%S', time.gmtime(seq_run_time)))
 
 
 if __name__ == '__main__':
