@@ -1,24 +1,17 @@
 import os
 import sys
-import random
-import math
 import numpy as np
-import skimage.io
-import matplotlib
-import matplotlib.pyplot as plt
-import argparse
 import cv2
 import glob
-# run time
 import timeit
-# time format
 import time
+import argparse
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath('')
 
-DIR = '/media/RAIDONE/radice/datasets/'
-CROP_AREA = [0, 360, 1280, 730]
+DIR = '/media/RAIDONE/radice/datasets/oxford'
+CROP_AREA = [0, 200, 1280, 810]
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
@@ -37,16 +30,6 @@ COCO_MODEL_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
 if not os.path.exists(COCO_MODEL_PATH):
     utils.download_trained_weights(COCO_MODEL_PATH)
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Data generator for depth-and-motion-learning')
-    parser.add_argument('--folder', type=str,
-                        help='folder containing files',
-                        required=True)
-    parser.add_argument('--dataset', type=str,
-                        help='dataset',
-                        choices=['oxford'])
-    return parser.parse_args()
-
 # Configurations
 # We'll be using a model trained on the MS-COCO dataset. The configurations of this model are in the CocoConfig class in
 # coco.py.
@@ -60,63 +43,16 @@ class InferenceConfig(coco.CocoConfig):
     IMAGES_PER_GPU = 1
 
 
-def mask_generator(model, files, dataset, folder, subfolder):
-    # start timer
-    start = timeit.default_timer()
-    current_seg = start
-
-    if not os.path.isdir(os.path.join(DIR, dataset, folder, 'rcnn-masks')):
-        os.mkdir(os.path.join(DIR, dataset, folder, 'rcnn-masks'))
-    if not os.path.isdir(os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder)):
-        os.mkdir(os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder))
-
-    print('-> Processing', subfolder, 'camera frames')
-    print('-> Save path', os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder))
-
-    count = 0
-    for file in files:
-        image = cv2.imread(file)
-        image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
-
-        # Run detection, verbose 0 no print on screen
-        results = model.detect([image], verbose=0)
-
-        r = results[0]
-
-        # Creazione dizionario maschera
-        # Ad ogni cella viene associato il valore di score se presente
-        dict = {}
-        dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
-        for i in range(r['masks'].shape[0]):
-            for j in range(r['masks'].shape[1]):
-                for k in range(r['masks'].shape[2]):
-                    if r['masks'][i, j, k] == True:
-                        dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
-
-        # Salvo il dizionario con compressione
-        basename = os.path.basename(file).split('.')[0]
-        dict_save_path = os.path.join(DIR, dataset, folder, 'rcnn-masks', subfolder, '{}'.format(basename))
-        np.savez_compressed(dict_save_path, dict)
-
-        if (count % 1000 == 0) and (count != 0):
-            print('->', count, 'Done')
-            # segment run time
-            stop_seg = timeit.default_timer()
-            seg_run_time = int(stop_seg - current_seg)
-            print('-> Segment run time:', time.strftime('%H:%M:%S', time.gmtime(seg_run_time)))
-            current_seg += seg_run_time
-
-        count += 1
-
-    # partial run time
-    stop = timeit.default_timer()
-    partial_run_time = int(stop - start)
-    print('-> Partial run time:', time.strftime('%H:%M:%S', time.gmtime(partial_run_time)))
+def parse_args():
+    parser = argparse.ArgumentParser(description='Data generator for depth-and-motion-learning')
+    parser.add_argument('--folder', type=str,
+                        help='folder containing files',
+                        required=True)
+    return parser.parse_args()
 
 
 def main(args):
     folder = args.folder
-    dataset = args.dataset
 
     config = InferenceConfig()
 
@@ -135,13 +71,6 @@ def main(args):
     # ```Dataset``` class, the 'person' class would get class ID = 1 (just like COCO) and the 'teddy bear' class is 78
     # (different from COCO). Keep that in mind when mapping class IDs to class names.
     # To get the list of class names, you'd load the dataset and then use the ```class_names``` property like this.
-
-    # Load COCO dataset
-    # dataset = coco.CocoDataset()
-    # dataset.load_coco(COCO_DIR, "train")
-    # dataset.prepare()
-    # Print class names
-    # print(dataset.class_names)
 
     # We don't want to require you to download the COCO dataset just to run this demo, so we're including the list of class
     # names below. The index of the class name in the list represent its ID (first class is 0, second is 1, third is 2,
@@ -166,20 +95,47 @@ def main(args):
     #                'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
     #                'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
     #                'teddy bear', 'hair drier', 'toothbrush']
+    print('Processing sequence', folder)
+    path_to_lr_folders = os.path.join(DIR, folder, 'stereo')
+    for lr in glob.glob(path_to_lr_folders + '/*'):
 
-    # Directory of images to run detection on
-    if dataset == 'oxford':
-        left_path = os.path.join(DIR, dataset, folder, 'stereo', 'left')
-        # right_path = os.path.join(DIR, dataset, folder, 'stereo', 'right')
+        print('Processing folder', os.path.basename(lr))
 
-        left_files = glob.glob(left_path + '/*.png')
-        # right_files = glob.glob(right_path + '/*.png')
+        mask_lr_path = os.path.join(DIR, folder, 'rcnn-masks-classes', os.path.basename(lr))
+        if not os.path.exists(mask_lr_path):
+            os.makedirs(mask_lr_path)
 
-        left_files = sorted(left_files)
-        # right_files = sorted(right_files)
+        for file in glob.glob(lr + '/*'):
 
-        mask_generator(model=model, files=left_files, dataset=dataset, folder=folder, subfolder='left')
-        # mask_generator(model=model, files=right_files, dataset=dataset, folder=folder, subfolder='right')
+            basename = os.path.basename(file).split('.')[0]
+            dict_save_path = os.path.join(mask_lr_path, '{}'.format(basename))
+
+            if os.path.isfile(dict_save_path + '.npz'):
+                continue
+
+            image = cv2.imread(file)
+            image = image[CROP_AREA[1]:CROP_AREA[3], :, :]
+
+            # Run detection, verbose 0 no print on screen
+            results = model.detect([image], verbose=0)
+
+            r = results[0]
+
+            # Creazione dizionario maschera
+            # Ad ogni cella viene associato il valore di score se presente
+            # Ad ogni cella viene associata la classe di appartenenza
+            dict = {}
+            dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
+            dict['class_ids'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
+            for i in range(r['masks'].shape[0]):
+                for j in range(r['masks'].shape[1]):
+                    for k in range(r['masks'].shape[2]):
+                        if r['masks'][i, j, k] == True:
+                            dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
+                            dict['class_ids'][i, j] = r['class_ids'][k]
+
+            # Salvo il dizionario con compressione
+            np.savez_compressed(dict_save_path, dict)
 
 
 if __name__ == '__main__':

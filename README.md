@@ -38,7 +38,7 @@ le maschere con la soglia di score che preferisco.
 - uso solo frames della camera di sinistra
 
 ```shell
-python Mask_RCNN/mask_generator.py --folder --dataset
+python Mask_RCNN/mask_generator_oxford.py --folder --dataset
 ```
 
 ### Kitti
