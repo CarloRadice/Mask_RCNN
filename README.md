@@ -35,6 +35,7 @@ le maschere con la soglia di score che preferisco.
 ### Oxford
 
 - crop immagini: [0, 360, 1280, 730]
+- test crop immagini: [0, 200, 1280, 810] (più grandi magari meglio)
 - uso solo frames della camera di sinistra
 
 ```shell
