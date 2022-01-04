@@ -10,7 +10,7 @@ import time
 ROOT_DIR = os.path.abspath('')
 
 INPUT_DIR = '/media/RAIDONE/radice/datasets/kitti/data'
-OUTPUT_DIR = '/media/RAIDONE/radice/datasets/kitti/mask-rcnn'
+OUTPUT_DIR = '/media/RAIDONE/radice/datasets/kitti/mask-rcnn-classes'
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
@@ -59,14 +59,16 @@ def mask_generator(model, files, save_path):
 
             # Creazione dizionario maschera
             # Ad ogni cella viene associato il valore di score se presente
+            # Ad ogni cella viene associata la classe di appartenenza
             dict = {}
             dict['score_mask'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
+            dict['class_ids'] = np.zeros([r['masks'].shape[0], r['masks'].shape[1]], dtype=np.uint8)
             for i in range(r['masks'].shape[0]):
                 for j in range(r['masks'].shape[1]):
                     for k in range(r['masks'].shape[2]):
                         if r['masks'][i, j, k] == True:
                             dict['score_mask'][i, j] = np.floor(r['scores'][k] * 100)
-
+                            dict['class_ids'][i, j] = r['class_ids'][k]
             # Salvo il dizionario con compressione
             np.savez_compressed(dict_save_path, dict)
 
